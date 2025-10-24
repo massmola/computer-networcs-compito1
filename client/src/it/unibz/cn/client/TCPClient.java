@@ -52,12 +52,6 @@ public class TCPClient {
             System.err.println("EOF: " + e.getMessage());
         } catch (IOException e) {
             System.err.println("IO: " + e.getMessage());
-        } finally {
-            if (s != null) try {
-                s.close();
-            } catch (IOException e) {
-                // close failed
-            }
         }
     }
 
