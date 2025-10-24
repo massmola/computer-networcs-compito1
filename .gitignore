@@ -1,0 +1,59 @@
+# Compiled class files
+**/*.class
+
+# Output directory for javac used in this project
+/out/
+
+# Build output
+/target/
+/build/
+/dist/
+
+# Java archives
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs / editors
+.idea/
+.project
+.classpath
+.settings/
+/.metadata/
+/.classpath
+
+# Vim swap files
+*.swp
+*~
+
+# Temporary files
+*.tmp
+
+# Node modules (if any)
+node_modules/
+
+# direnv
+.direnv/
+
+# nix build result
+/result
+
+# Ignore generated jars or distributions
+*.zip
+*.tar.gz
+
+# macOS Finder
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# End of file
