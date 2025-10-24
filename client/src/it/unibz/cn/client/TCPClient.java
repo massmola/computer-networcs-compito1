@@ -39,8 +39,8 @@ public class TCPClient {
                 out.flush();
 
 
-                String data = in.readUTF();
-                System.out.println("Received: " + data);
+                String response = in.readUTF();
+                System.out.println("Received: " + response);
             }
             
             s.close();
