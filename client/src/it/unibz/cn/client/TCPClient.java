@@ -3,22 +3,18 @@ package it.unibz.cn.client;
 import java.net.*;
 import java.util.Scanner;
 
-import javax.swing.plaf.TreeUI;
-
 import java.io.*;
 
 public class TCPClient {
+
+    // single shared Scanner for System.in: do NOT close it (closing would close System.in)
+    private static final Scanner STDIN = new Scanner(System.in);
 
     public static void main(String args[]) {
         String nickname = null;
         String host = (args.length >= 2) ? args[1] : "localhost";
         int serverPort = (args.length >= 3) ? Integer.parseInt(args[2]) : 7896;
         
-        if (args.length < 2) {
-            System.err.println("Usage: java it.unibz.cn.client.TCPClient <host> [port]");
-            System.exit(2);
-            
-        }
         
         try (
             Socket s = new Socket(host, serverPort);
@@ -56,28 +52,30 @@ public class TCPClient {
     }
 
     static String getNickname() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter your nickname: ");
-        String nickname = scanner.nextLine();
+        String nickname = null;
+
+        System.out.println("Enter your nickname: ");
+        nickname = STDIN.nextLine();
         while (nickname == null || nickname.trim().isEmpty() || !nickname.matches("[A-Za-z0-9_]{3,16}")) {
             System.out.println("Invalid nickname. It must be 3-16 characters and contain only letters, digits or underscores.");
             System.out.print("Enter your nickname: ");
-            nickname = scanner.nextLine();
+            nickname = STDIN.nextLine();
         }
-        scanner.close();
+
         return nickname;
     }
 
     static String getMessage() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter your message: ");
-        String message = scanner.nextLine();
+        String message = null;
+
+        System.out.println("Enter your message: ");
+        message = STDIN.nextLine();
         while (message == null || message.trim().isEmpty()) {
             System.out.println("Message cannot be empty.");
             System.out.print("Enter your message: ");
-            message = scanner.nextLine();
+            message = STDIN.nextLine();
         }
-        scanner.close();
+
         return message;
     }
 
