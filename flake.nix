@@ -1,27 +1,37 @@
 {
-  description = "Flake providing a Java dev shell (OpenJDK 17) for the project";
+  description = "A development shell for a Java project";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        openjdk = pkgs.openjdk17;
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          buildInputs = [ openjdk ];
-          shellHook = ''
-            echo "Entered Java dev shell using ${openjdk.pname}"
-            # javac and java are on PATH
-            echo "javac: $(which javac)"
-            echo "java:  $(which java)"
-          '';
-        };
-      }
-    );
+  outputs = { self, nixpkgs }:
+    let
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
+    in
+    {
+      devShells = forEachSupportedSystem (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            
+            buildInputs = [
+              # --- This is the updated line ---
+              pkgs.jdk21    # Java Development Kit 21 (Current LTS)
+              # ------------------------------
+
+              pkgs.maven    # Maven build tool
+              pkgs.gradle   # Gradle build tool
+            ];
+
+            shellHook = ''
+              echo "Welcome to your Java 21 dev shell!"
+              export JAVA_HOME="${pkgs.jdk21}"
+            '';
+          };
+        });
+    };
 }

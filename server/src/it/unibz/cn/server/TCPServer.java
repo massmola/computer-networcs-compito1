@@ -1,10 +1,13 @@
 package it.unibz.cn.server;
 
 import java.net.*;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.io.*;
 
 public class TCPServer {
 	final static int SERVER_PORT = 7896;
+	static List<Connection> allClients = new CopyOnWriteArrayList<>();
 
 	public static void main(String args[]) {
 
@@ -13,6 +16,8 @@ public class TCPServer {
 		){
 			while (true) {
 				Socket clientSocket = listenSocket.accept();
+				
+				@SuppressWarnings("unused")
 				Connection c = new Connection(clientSocket);
 			}
 		} catch (IOException e) {
