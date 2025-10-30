@@ -1,4 +1,4 @@
-package it.unibz.cn.server;
+package it.unibz.cn.auction;
 
 /**
  * Represents a single item up for auction.
@@ -9,25 +9,11 @@ public class Item {
     double minIncrement;
     
     // Volatile as they are written by the auction thread and read by Connection threads
-    volatile double currentHighestBid = 0;
-    volatile String currentHighestBidder = null; // Nickname of the highest bidder
 
     public Item(String description, double startPrice, double minIncrement) {
         this.description = description;
         this.startPrice = startPrice;
         this.minIncrement = minIncrement;
-        this.currentHighestBid = 0; // Start with no bid
-        this.currentHighestBidder = null;
-    }
-
-    /**
-     * Calculates the minimum legal bid required to be the new high bidder.
-     */
-    public double getMinimumNextBid() {
-        if (currentHighestBid == 0) {
-            return startPrice;
-        }
-        return currentHighestBid + minIncrement;
     }
 
     @Override
