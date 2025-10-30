@@ -12,7 +12,7 @@ public class Auction {
      * The map has as keys the users who participated in the auction so far,
      * and as values their respective highest bids.
      */
-    HashMap<String, Double> usersHighestBids = null;
+    HashMap<String, Double> usersBids = null;
 
     public Auction(Item item){
         this.item = item;
@@ -26,24 +26,26 @@ public class Auction {
      * a bid, false otherwise.
      */
     public boolean isUserRegistered(String username){
-        return false;
+        return usersBids.containsKey(username);
     }
 
     /**
-     * Returns true if the input bid is equal or higher than the highest
-     * bid placed so far, false otherwise.
+     * Returns the input user's bid. If the user is not registered, it returns
+     * Double.MIN_VALUE
      */
-    public boolean isBidHighest(double bid){
-        return false;
+    public double getUserBid(String username){
+        if (!isUserRegistered(username)) return Double.MIN_VALUE;
+        return usersBids.get(username);
     }
 
     /**
      * Returns true if the user has already placed a bid and the bid is
      * higher than the input bid. Returns false if the user is not registered,
-     * or the bid is lower than the input bid.
+     * or the bid is lower or equal than the input bid.
      */
     public boolean hasUserAHigherBid(String username, double bid){
-        return false;
+        if(!usersBids.containsKey(username)) return false;
+        return usersBids.get(username) > bid;
     }
 
     /**
@@ -52,42 +54,68 @@ public class Auction {
      * the bid of the user is updated, otherwise the highest is kept.
      */
     public void addUserAndBid(String username, double bid){
-        return;
+        if(usersBids.containsKey(username)) {
+            if(usersBids.get(username) >= bid) return;
+        }
+        usersBids.put(username, bid);
     }
 
     /**
      * Removes the input user.
      */
     public void removeUser(String username){
-        return;
+        if(!usersBids.containsKey(username)) return;
+        usersBids.remove(username);
     }
 
     /**
      * Returns the user with the highest bid. If no user participated, returns null.
      */
     public String getHighestBidder(){
-        return null;
+        if(usersBids.keySet().isEmpty()) return null;
+
+        double highestBid = getHighestBid();
+        String highestBidder = null;
+
+        for(String user : usersBids.keySet()){
+            if(usersBids.get(user) == highestBid){
+                highestBidder = user;
+                break;
+            }
+        }
+
+        return highestBidder;
     }
 
     /**
      * Returns the highest bid. If no user participated, returns Double.MIN_VALUE.
      */
     public double getHighestBid(){
-        return Double.MIN_VALUE;
+        if(usersBids.keySet().isEmpty()) return Double.MIN_VALUE;
+
+        double highestBid = Double.MIN_VALUE;
+        for(String user : usersBids.keySet()){
+            double curBid = usersBids.get(user);
+            if(curBid > highestBid){
+                highestBid = curBid;
+            }
+        }
+
+        return highestBid;
     }
 
     // -------- Getters and Setters --------
 
-    Item getItem() {
+    public Item getItem() {
         return item;
     }
 
-    Map<String, Double> getUserHighestBids() {
-        return usersHighestBids;
+    public Map<String, Double> getUserHighestBids() {
+        return usersBids;
     }
 
-    Set<String> getRegisteredUsers() {
-        return usersHighestBids.keySet();
+    public Set<String> getRegisteredUsers() {
+        return usersBids.keySet();
     }
 
     public boolean getOpen(){
