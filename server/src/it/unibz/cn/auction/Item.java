@@ -4,6 +4,7 @@ package it.unibz.cn.auction;
  * Represents a single item up for auction.
  */
 public class Item {
+
     String description;
     double startPrice;
     double minIncrement;
@@ -22,5 +23,17 @@ public class Item {
             "Item: '%s' (Start Price: $%.2f, Min Increment: $%.2f)",
             description, startPrice, minIncrement
         );
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getStartPrice() {
+        return startPrice;
+    }
+
+    public double getMinIncrement() {
+        return minIncrement;
     }
 }
