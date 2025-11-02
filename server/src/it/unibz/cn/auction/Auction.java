@@ -17,6 +17,7 @@ public class Auction {
     public Auction(Item item){
         this.item = item;
         this.open = false;
+        usersBids = new HashMap<>();
     }
 
     // -------- Utility Methods --------
@@ -34,7 +35,8 @@ public class Auction {
      * Double.MIN_VALUE
      */
     public double getUserBid(String username){
-        if (!isUserRegistered(username)) return Double.MIN_VALUE;
+        if (!isUserRegistered(username))
+            return Double.MIN_VALUE;
         return usersBids.get(username);
     }
 
@@ -44,7 +46,8 @@ public class Auction {
      * or the bid is lower or equal than the input bid.
      */
     public boolean hasUserAHigherBid(String username, double bid){
-        if(!usersBids.containsKey(username)) return false;
+        if(!usersBids.containsKey(username))
+            return false;
         return usersBids.get(username) > bid;
     }
 
@@ -55,7 +58,8 @@ public class Auction {
      */
     public void addUserAndBid(String username, double bid){
         if(usersBids.containsKey(username)) {
-            if(usersBids.get(username) >= bid) return;
+            if(usersBids.get(username) >= bid)
+                return;
         }
         usersBids.put(username, bid);
     }
@@ -64,7 +68,8 @@ public class Auction {
      * Removes the input user.
      */
     public void removeUser(String username){
-        if(!usersBids.containsKey(username)) return;
+        if(!usersBids.containsKey(username))
+            return;
         usersBids.remove(username);
     }
 
@@ -72,7 +77,8 @@ public class Auction {
      * Returns the user with the highest bid. If no user participated, returns null.
      */
     public String getHighestBidder(){
-        if(usersBids.keySet().isEmpty()) return null;
+        if(usersBids.keySet().isEmpty())
+            return null;
 
         double highestBid = getHighestBid();
         String highestBidder = null;
@@ -91,7 +97,8 @@ public class Auction {
      * Returns the highest bid. If no user participated, returns Double.MIN_VALUE.
      */
     public double getHighestBid(){
-        if(usersBids.keySet().isEmpty()) return Double.MIN_VALUE;
+        if(usersBids.keySet().isEmpty())
+            return Double.MIN_VALUE;
 
         double highestBid = Double.MIN_VALUE;
         for(String user : usersBids.keySet()){

@@ -1,5 +1,6 @@
 package it.unibz.cn.server;
 
+import it.unibz.cn.auction.Auction;
 import it.unibz.cn.auction.Item;
 
 import java.net.*;
