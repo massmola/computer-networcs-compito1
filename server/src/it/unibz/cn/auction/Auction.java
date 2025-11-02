@@ -5,6 +5,9 @@ import java.util.Set;
 
 public class Auction {
 
+    // TODO, i will change return to Double.MIN_VALUE with a variable that hold the starting price or using NULL
+
+    // TODO we missed to add placeBid() or is in an other class ???
     final Item item;
     boolean open;
 
@@ -53,6 +56,7 @@ public class Auction {
      * If the user is already registered, if the bid is higher than the previous,
      * the bid of the user is updated, otherwise the highest is kept.
      */
+    // TODO we need a return value to know if the user was registered or not/and the pid was updated or not
     public void addUserAndBid(String username, double bid){
         if(usersBids.containsKey(username)) {
             if(usersBids.get(username) >= bid) return;
@@ -118,7 +122,9 @@ public class Auction {
         return usersBids.keySet();
     }
 
-    public boolean getOpen(){
+    // TODO
+    //  solo cambiato il nome di getOpen in isOpen per maggiore chiarezza.
+    public boolean isOpen(){
         return this.open;
     }
 

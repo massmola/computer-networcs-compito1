@@ -5,6 +5,7 @@ package it.unibz.cn.auction;
  */
 public class Item {
 
+    // TODO do we need to add a name?
     String description;
     double startPrice;
     double minIncrement;
