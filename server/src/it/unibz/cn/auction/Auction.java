@@ -60,12 +60,13 @@ public class Auction {
      * the bid of the user is updated, otherwise the highest is kept.
      */
     // TODO we need a return value to know if the user was registered or not/and the pid was updated or not
-    public void addUserAndBid(String username, double bid){
+    public boolean addUserAndBid(String username, double bid){
         if(usersBids.containsKey(username)) {
             if(usersBids.get(username) >= bid)
-                return;
+                return false;
         }
         usersBids.put(username, bid);
+        return true;
     }
 
     /**

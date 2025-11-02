@@ -6,6 +6,7 @@ package it.unibz.cn.auction;
 public class Item {
 
     // TODO do we need to add a name?
+    String name;
     String description;
     double startPrice;
     double minIncrement;
@@ -24,6 +25,10 @@ public class Item {
             "Item: '%s' (Start Price: $%.2f, Min Increment: $%.2f)",
             description, startPrice, minIncrement
         );
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getDescription() {
