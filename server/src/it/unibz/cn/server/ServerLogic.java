@@ -225,16 +225,16 @@ public class ServerLogic {
         return auctions.containsKey(auctionId);
     }
 
-    /**
-     * Gets the number of currently active (open) auctions
-     *
-     * @return the count of open auctions
-     */
-    public int getActiveAuctionsCount() {
-        return (int) auctions.values().stream()
-                .filter(Auction::isOpen)
-                .count();
-    }
+//    /**
+//     * Gets the number of currently active (open) auctions
+//     *
+//     * @return the count of open auctions
+//     */
+//    public int getActiveAuctionsCount() {
+//        return (int) auctions.values().stream()
+//                .filter(Auction::isOpen)
+//                .count();
+//    }
 
     /**
      * Gets the total number of auctions (both open and closed)

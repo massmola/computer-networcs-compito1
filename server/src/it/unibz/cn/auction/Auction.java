@@ -3,7 +3,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+
 public class Auction {
+    public final static double USER_NOT_FOUND = Double.MIN_VALUE;
 
     // TODO, i will change return to Double.MIN_VALUE with a variable that hold the starting price or using NULL
 
@@ -39,7 +41,7 @@ public class Auction {
      */
     public double getUserBid(String username){
         if (!isUserRegistered(username))
-            return Double.MIN_VALUE;
+            return USER_NOT_FOUND;
         return usersBids.get(username);
     }
 
