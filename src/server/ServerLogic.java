@@ -29,6 +29,8 @@ public class ServerLogic {
 
     private final Set<String> users;
 
+    private Auction activeAuction;
+
     public ServerLogic() {
         this.auctions = new ConcurrentHashMap<>();
         this.users = new HashSet<>();
@@ -65,7 +67,12 @@ public class ServerLogic {
         if (!auctions.containsKey(auctionId)) {
             return null; // Auction id does not exist
         }
-        auctions.get(auctionId).setOpen(true);
+
+        if(activeAuction != null && !activeAuction.isOpen() ){
+            auctions.get(auctionId).setOpen(true);
+        } else {
+            return "Auction " + auctionId + " can not be started, it is already open an other one";
+        }
 
         String result = "Auction " + auctionId + " started";
         return result;
@@ -88,7 +95,7 @@ public class ServerLogic {
 
         // TODO do we need to check if it is open? Cant be a check in place bid that will return a message or error?
         if (!auction.isOpen()) {
-         return false; // Auction is closed
+            return false; // Auction is closed
         }
 
         // TODO check if the bid was successful?
@@ -124,7 +131,7 @@ public class ServerLogic {
         String winner = auction.getHighestBidder();
         if (winner != null) {
             result = "Auction " + auctionId + " closed - WINNER: " +
-                     winner + " with €" + auction.getHighestBid();
+                    winner + " with €" + auction.getHighestBid();
         } else {
             result = "Auction " + auctionId + " closed - No winner (no bids)";
         }
@@ -181,11 +188,11 @@ public class ServerLogic {
             Auction auction = entry.getValue();
 
             list.append(auctionId)
-                .append(" - ")
-                .append(auction.getItem().getName())
-                .append(" [")
-                .append(auction.isOpen() ? "OPEN" : "CLOSED")
-                .append("] ");
+                    .append(" - ")
+                    .append(auction.getItem().getName())
+                    .append(" [")
+                    .append(auction.isOpen() ? "OPEN" : "CLOSED")
+                    .append("] ");
 
             // TODO check for auction -> i will change return to Double.MIN_VALUE with a variable that hold the starting price or using NULL
             double highestBid = auction.getHighestBid();
@@ -324,5 +331,9 @@ public class ServerLogic {
 
     public synchronized Set<String> getUsers(){
         return users;
+    }
+
+    public Auction getActiveAuction() {
+        return activeAuction;
     }
 }
