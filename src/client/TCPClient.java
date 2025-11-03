@@ -82,8 +82,9 @@ public class TCPClient {
                 // Send and Receive
                 out.writeUTF(outMessage);
                 out.flush();
+                Thread.sleep(500); // Small delay to allow server response to be processed
             }
-
+            
         } catch (UnknownHostException e) {
             System.out.println("Sock: " + e.getMessage());
 
@@ -93,7 +94,8 @@ public class TCPClient {
         } catch (IOException e) {
             System.out.println("IO: " + e.getMessage());
 
-        } finally {
+        } catch (InterruptedException e) {}
+        finally {
             if (scanner != null) {
                 scanner.close();
             }
