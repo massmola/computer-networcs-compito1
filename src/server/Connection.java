@@ -137,6 +137,11 @@ class Connection extends Thread {
              *
              */
 
+        } else {
+
+            // Ignore server message
+            outMessage.type = Commands.getServerCommand(IGNORE);
+            outMessage.content = "";
         }
 
         return outMessage.encode();

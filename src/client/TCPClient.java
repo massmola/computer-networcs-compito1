@@ -272,6 +272,9 @@ public class TCPClient {
             System.out.println("Username already in use.");
         } else if (message.type.equals(Commands.getServerCommand(PRINT_MESSAGE))){
             System.out.println(message.content);
+        } else {
+            // Case: IGNORE
+            return;
         }
     }
 

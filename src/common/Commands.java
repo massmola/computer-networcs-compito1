@@ -21,6 +21,7 @@ public class Commands {
         switch(command){
             case USER_REGISTER_SUCCESS -> { return "USER_REGISTER_SUCCESS"; }
             case USER_REGISTER_FAIL -> { return "USER_REGISTER_FAIL"; }
+            case IGNORE -> { return "IGNORE"; }
             default -> { return "PRINT_MESSAGE"; }
         }
     }
