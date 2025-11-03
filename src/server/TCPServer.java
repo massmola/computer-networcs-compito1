@@ -1,13 +1,8 @@
-package it.unibz.cn.server;
+package server;
 
-import it.unibz.cn.auction.Auction;
-import it.unibz.cn.auction.Item;
-
-import java.net.*;
-import java.io.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 /**
  * Initializes the server, the port and listens for clients who want to connect

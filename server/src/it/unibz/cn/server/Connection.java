@@ -1,9 +1,10 @@
 package it.unibz.cn.server;
 
-import it.unibz.cn.auction.Item;
-
-import java.net.*;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.net.Socket;
 
 /**
  * Handles a single connection with a single client.
@@ -14,10 +15,14 @@ class Connection extends Thread {
     DataInputStream in;
     DataOutputStream out;
     Socket clientSocket;
+    ServerLogic serverLogic;
+    String username = "";
+    boolean userSet = false;
 
-    public Connection (Socket aClientSocket) {
+    public Connection (Socket aClientSocket, ServerLogic serverLogic) {
         try {
-            clientSocket = aClientSocket;
+            this.clientSocket = aClientSocket;
+            this.serverLogic = serverLogic;
 
             // Initialize streams of input and output
             in = new DataInputStream( clientSocket.getInputStream());
@@ -27,23 +32,45 @@ class Connection extends Thread {
             this.start();
 
         } catch(IOException e) {
-            System.out.println("Connection: "+e.getMessage());
+            System.out.println("Connection: " + e.getMessage());
         }
     }
 
     public void run(){
 
-        try { // an echo server
-            //Read the arriving message - blocking
-            String data = in.readUTF();
+        String outEncodedMessage = "";
 
-            // Write the message to send
-            out.writeUTF(data);
+        try { // an echo server
+
+            while(true) {
+                //Read the arriving message - blocking
+                String inEncodedMessage = in.readUTF();
+
+                // Close the connection if the user sends the exit
+                if(inEncodedMessage.equals("exit")){
+                    break;
+                }
+
+                if(!userSet) {
+                    if(!serverLogic.getUsers().contains(inEncodedMessage)){
+                        serverLogic.addUser(inEncodedMessage);
+                        outEncodedMessage = "User set. Place a bid: ";
+                        userSet = true;
+                    } else {
+                        outEncodedMessage = "UserUnavailable.\nEnter a valid username: ";
+                    }
+                } else {
+                    outEncodedMessage = "Enter a valid command: ";
+                }
+
+                // Write the message to send
+                out.writeUTF(outEncodedMessage);
+            }
 
         } catch(EOFException e) {
-            System.out.println("EOF: "+e.getMessage());
+            System.out.println("EOF: " + e.getMessage());
         } catch(IOException e) {
-            System.out.println("IO:s a"+e.getMessage());
+            System.out.println("IO:s a" + e.getMessage());
         } finally {
             try {
                 clientSocket.close();

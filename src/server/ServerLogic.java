@@ -1,12 +1,10 @@
-package it.unibz.cn.server;
-
-import it.unibz.cn.auction.Auction;
-import it.unibz.cn.auction.Item;
+package server;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import auction.*;
 
 /**
  * ServerLogic manages the business logic of the auction system,
@@ -299,7 +297,7 @@ public class ServerLogic {
      * @return true if the inout user is successfully added to the set. Returns false
      * if the user is already in the set.
      */
-    public synchronized boolean addUser(String user){
+    public synchronized boolean registerUser(String user){
         if(users.contains(user)){
             return false;
         }
