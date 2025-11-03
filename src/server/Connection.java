@@ -85,29 +85,29 @@ class Connection extends Thread {
         inMessage.decode(inString);
         Message outMessage = new Message();
 
-        if(inMessage.type.equals(Commands.getClientCommand(REGISTER))){
+        if(inMessage.type.equals(REGISTER.name())){
 
             // attempt registration
             if(serverLogic.registerUser(inMessage.content)){
-                outMessage.type = Commands.getServerCommand(USER_REGISTER_SUCCESS);
+                outMessage.type = USER_REGISTER_SUCCESS.name();
                 username = inMessage.content;
                 userSet = true;
             } else {
-                outMessage.type = Commands.getServerCommand(USER_REGISTER_FAIL);
+                outMessage.type = USER_REGISTER_FAIL.name();
             }
 
-        } else if (inMessage.type.equals(Commands.getClientCommand(EXIT))){
+        } else if (inMessage.type.equals(EXIT.name())){
 
             // User interrupts connection with the server
-            outMessage.type = Commands.getServerCommand(PRINT_MESSAGE);
+            outMessage.type = PRINT_MESSAGE.name();
             outMessage.content = "Server received: EXIT";
             serverLogic.removeUser(username);
             interruptConnection = true;
 
-        } else if (inMessage.type.equals(Commands.getClientCommand(STATUS))) {
+        } else if (inMessage.type.equals(STATUS.name())) {
 
             // TODO: User asks status
-            outMessage.type = Commands.getServerCommand(PRINT_MESSAGE);
+            outMessage.type = PRINT_MESSAGE.name();
             outMessage.content = "Server received: " + username + " ASKS STATUS";
             /*
              *
@@ -115,10 +115,10 @@ class Connection extends Thread {
              *
              */
 
-        } else if (inMessage.type.equals(Commands.getClientCommand(MESSAGE))) {
+        } else if (inMessage.type.equals(MESSAGE.name())) {
 
             // TODO: User sends message to chat
-            outMessage.type = Commands.getServerCommand(PRINT_MESSAGE);
+            outMessage.type = PRINT_MESSAGE.name();
             outMessage.content = "Server received: " + username + " SENDS MESSAGE: " + inMessage.content;
             /*
              *
@@ -126,10 +126,10 @@ class Connection extends Thread {
              *
              */
 
-        } else if (inMessage.type.equals(Commands.getClientCommand(BID))) {
+        } else if (inMessage.type.equals(BID.name())) {
 
             // TODO: User places a bid
-            outMessage.type = Commands.getServerCommand(PRINT_MESSAGE);
+            outMessage.type = PRINT_MESSAGE.name();
             outMessage.content = "Server received: " + username + " PLACES A BID OF " + inMessage.content;
             /*
              *
@@ -140,7 +140,7 @@ class Connection extends Thread {
         } else {
 
             // Ignore server message
-            outMessage.type = Commands.getServerCommand(IGNORE);
+            outMessage.type = IGNORE.name();
             outMessage.content = "";
         }
 

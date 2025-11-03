@@ -70,7 +70,7 @@ public class TCPClient {
                  */
 
 
-                if (inMessage.type.equalsIgnoreCase(Commands.getClientCommand(EXIT))) {
+                if (inMessage.type.equalsIgnoreCase(EXIT.name())) {
                     System.out.println("User is closing connection. Bye!");
                     break; // DO NOT send anything to the server
                 }
@@ -121,39 +121,39 @@ public class TCPClient {
         String inArgument = parts.length > 1 ? parts[1] : "";
 
         // command exit
-        if (inCommand.equalsIgnoreCase(Commands.getClientCommand(EXIT))) {
+        if (inCommand.equalsIgnoreCase(EXIT.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(EXIT);
+                message.type = EXIT.name();
                 message.content = "";
             }
 
             // command help
-        } else if (inCommand.equalsIgnoreCase(Commands.getClientCommand(HELP))) {
+        } else if (inCommand.equalsIgnoreCase(HELP.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(HELP);
+                message.type = HELP.name();
                 message.content = "";
             }
 
             // command status
-        } else if (inCommand.equalsIgnoreCase(Commands.getClientCommand(STATUS))) {
+        } else if (inCommand.equalsIgnoreCase(STATUS.name())) {
             if(!inArgument.isEmpty()){
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(STATUS);
+                message.type = STATUS.name();
                 message.content = "";
             }
 
             // command message
-        } else if (inCommand.equalsIgnoreCase(Commands.getClientCommand(MESSAGE))) {
+        } else if (inCommand.equalsIgnoreCase(MESSAGE.name())) {
             if(!inArgument.isEmpty()){
-                message.type = Commands.getClientCommand(MESSAGE);
+                message.type = MESSAGE.name();
                 message.content = inArgument;
             } else {
                 message.type = Commands.getErrorCommand();
@@ -161,9 +161,9 @@ public class TCPClient {
             }
 
             // command bid
-        } else if (inCommand.equalsIgnoreCase(Commands.getClientCommand(BID))) {
+        } else if (inCommand.equalsIgnoreCase(BID.name())) {
             if(isStringNumeric(inArgument)){
-                message.type = Commands.getClientCommand(BID);
+                message.type = BID.name();
                 message.content = inArgument;
             } else {
                 message.type = Commands.getErrorCommand();
@@ -188,22 +188,22 @@ public class TCPClient {
         String inArgument = parts.length > 1 ? parts[1] : "";
 
         // command exit
-        if (inCommand.equalsIgnoreCase(Commands.getClientCommand(EXIT))) {
+        if (inCommand.equalsIgnoreCase(EXIT.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(EXIT);
+                message.type = EXIT.name();
                 message.content = "";
             }
 
             // command help
-        } else if (inCommand.equalsIgnoreCase(Commands.getClientCommand(HELP))) {
+        } else if (inCommand.equalsIgnoreCase(HELP.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(HELP);
+                message.type = HELP.name();
                 message.content = "";
             }
 
@@ -213,7 +213,7 @@ public class TCPClient {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = Commands.getClientCommand(REGISTER);
+                message.type = REGISTER.name();
                 message.content = inCommand;
             }
         }
@@ -229,7 +229,7 @@ public class TCPClient {
             // returning the empty string, results in the client
             // not sending anything to the server
             return "";
-        } else if (message.type.equalsIgnoreCase(Commands.getClientCommand(HELP))) {
+        } else if (message.type.equalsIgnoreCase(HELP.name())) {
             System.out.println(getHelpMessage());
 
             // returning the empty string, results in the client
@@ -248,13 +248,13 @@ public class TCPClient {
             // returning the empty string, results in the client
             // not sending anything to the server
             return "";
-        } else if (message.type.equalsIgnoreCase(Commands.getClientCommand(HELP))) {
+        } else if (message.type.equalsIgnoreCase(HELP.name())) {
             System.out.println(getHelpMessagePreRegister());
 
             // returning the empty string, results in the client
             // not sending anything to the server
             return "";
-        } else if (message.type.equalsIgnoreCase(Commands.getClientCommand(REGISTER))) {
+        } else if (message.type.equalsIgnoreCase(REGISTER.name())) {
             return message.encode();
         }
 
@@ -265,12 +265,12 @@ public class TCPClient {
         Message message = new Message();
         message.decode(serverInput);
 
-        if(message.type.equals(Commands.getServerCommand(USER_REGISTER_SUCCESS))){
+        if(message.type.equals(USER_REGISTER_SUCCESS.name())){
             System.out.println("User registered successfully.");
             userSet = true;
-        } else if (message.type.equals(Commands.getServerCommand(USER_REGISTER_FAIL))){
+        } else if (message.type.equals(USER_REGISTER_FAIL.name())){
             System.out.println("Username already in use.");
-        } else if (message.type.equals(Commands.getServerCommand(PRINT_MESSAGE))){
+        } else if (message.type.equals(PRINT_MESSAGE.name())){
             System.out.println(message.content);
         } else {
             // Case: IGNORE
