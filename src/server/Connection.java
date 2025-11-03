@@ -89,6 +89,8 @@ class Connection extends Thread {
         inMessage.decode(inString);
         Message outMessage = new Message();
 
+        // TODO: to switch-case
+
         if(inMessage.type.equals(REGISTER.name())){
 
             // attempt registration
@@ -156,10 +158,9 @@ class Connection extends Thread {
      * private reply) from writing at the exact same time.
      */
     public synchronized void sendMessage(String msg) {
-        Message outMessage = new Message(EServerToClientCommands.PRINT_MESSAGE.name(), msg);
         try {
             if (!clientSocket.isClosed()) {
-                this.out.writeUTF(outMessage.encode());
+                this.out.writeUTF(msg);
                 this.out.flush();
             }
         } catch (IOException e) {
