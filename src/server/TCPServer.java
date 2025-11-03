@@ -3,6 +3,8 @@ package server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Initializes the server, the port and listens for clients who want to connect
@@ -19,17 +21,22 @@ public class TCPServer {
      * X) Check username availability.
      */
 
+    // Thread-safe list for all connected clients
+    static List<Connection> allClients = new CopyOnWriteArrayList<>();
+
+
     static ServerLogic serverLogic = new ServerLogic();
+    static final int  SERVER_PORT = 7896;
 
     public static void main (String args[]) {
-
-        try{
-
-            // Port Creation - this is the port where the server listens
-            int serverPort = 7896;
-
+        
+        // Port Creation - this is the port where the server listens
+        try (
+    
             // Server Socket Creation
-            ServerSocket listenSocket = new ServerSocket(serverPort);
+            ServerSocket listenSocket = new ServerSocket(SERVER_PORT);
+        ){ 
+
 
             // The server listens for clients who want to connect
             while(true) {
@@ -43,5 +50,17 @@ public class TCPServer {
         } catch (IOException e) {
             System.out.println("Listen: " + e.getMessage());
         }
+    }
+
+    /**
+     * Sends a message to every single connected client.
+     */
+    public static void broadcast(String message) {
+        System.out.println("BROADCAST: " + message); // Log to server console
+        
+        for (Connection c : allClients) {
+            c.sendMessage(message);
+        }
+
     }
 }

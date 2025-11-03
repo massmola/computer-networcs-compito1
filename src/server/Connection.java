@@ -46,6 +46,7 @@ class Connection extends Thread {
 
     public void run(){
 
+        TCPServer.allClients.add(this);
         String outEncodedMessage = "";
 
         try { // an echo server
@@ -69,13 +70,16 @@ class Connection extends Thread {
         } catch(EOFException e) {
             System.out.println("EOF: " + e.getMessage());
         } catch(IOException e) {
-            System.out.println("IO:s a" + e.getMessage());
+            System.out.println("IO:" + e.getMessage());
         } finally {
+            TCPServer.allClients.remove(this);
+            System.out.println("Client removed. Total clients: " + TCPServer.allClients.size());
             try {
                 clientSocket.close();
             } catch (IOException e) {
-                /*close failed*/
+                // ignore
             }
+
         }
     }
 
@@ -120,11 +124,7 @@ class Connection extends Thread {
             // TODO: User sends message to chat
             outMessage.type = PRINT_MESSAGE.name();
             outMessage.content = "Server received: " + username + " SENDS MESSAGE: " + inMessage.content;
-            /*
-             *
-             *
-             *
-             */
+            TCPServer.broadcast(outMessage.encode());
 
         } else if (inMessage.type.equals(BID.name())) {
 
@@ -144,6 +144,26 @@ class Connection extends Thread {
             outMessage.content = "";
         }
 
+        
+
         return outMessage.encode();
+    }
+
+
+        /**
+     * Sends a message to just this client.
+     * Synchronized to prevent multiple threads (e.g., a broadcast and a
+     * private reply) from writing at the exact same time.
+     */
+    public synchronized void sendMessage(String msg) {
+        Message outMessage = new Message(EServerToClientCommands.PRINT_MESSAGE.name(), msg);
+        try {
+            if (!clientSocket.isClosed()) {
+                this.out.writeUTF(outMessage.encode());
+                this.out.flush();
+            }
+        } catch (IOException e) {
+            System.out.println("Failed to send to " + clientSocket.getRemoteSocketAddress() + ": " + e.getMessage());
+        }
     }
 }
