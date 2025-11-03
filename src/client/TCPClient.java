@@ -1,8 +1,6 @@
 package client;
 
 import common.Commands;
-import common.EClientToServerCommands;
-import common.EServerToClientCommands;
 import common.Message;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -11,27 +9,31 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
+import java.lang.Thread;
 
 import static common.EClientToServerCommands.*;
 import static common.EServerToClientCommands.*;
 
 public class TCPClient {
 
-    static boolean userSet = false;
+    static volatile boolean userSet = false;
+    static volatile boolean serverReciverRunning = true;
 
     public static void main (String[] args) {
-
-        Socket clientSocket = null;
+        int serverPort = 7896;
+        String serverAddress = "localhost"; // oppure un IP/hostname
         Scanner scanner = null;
 
-        try {
-            int serverPort = 7896;
-            String serverAddress = "localhost"; // oppure un IP/hostname
-
-            clientSocket = new Socket(serverAddress, serverPort);
-
+        try (
+            Socket clientSocket = new Socket(serverAddress, serverPort);
             DataInputStream in  = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+
+            )
+            {
+                
+            Thread receiverThread = new Thread(() -> reciveMessagesFromServer(in));
+            receiverThread.start();
 
             // Read from keyboard
             scanner = new Scanner(System.in);
@@ -40,7 +42,7 @@ public class TCPClient {
             System.out.println("Connection established with " + serverAddress + ":" + serverPort);
 
             // Loop
-            while (true) {
+            while (serverReciverRunning) {
 
                 String outMessage = "";
                 Message inMessage = new Message();
@@ -62,16 +64,9 @@ public class TCPClient {
                     outMessage = processInputMessagePreRegister(inMessage);
                 }
 
-                /*
-                if (!scanner.hasNextLine()) { // EOF (Ctrl+D/Ctrl+Z)
-                    System.out.println("\nInput invalid. Closing connection");
-                    break;
-                }
-                 */
-
-
                 if (inMessage.type.equalsIgnoreCase(EXIT.name())) {
                     System.out.println("User is closing connection. Bye!");
+                    serverReciverRunning = false;
                     break; // DO NOT send anything to the server
                 }
 
@@ -87,9 +82,6 @@ public class TCPClient {
                 // Send and Receive
                 out.writeUTF(outMessage);
                 out.flush();
-                String reply = in.readUTF();
-
-                processServerResponse(reply);
             }
 
         } catch (UnknownHostException e) {
@@ -102,13 +94,15 @@ public class TCPClient {
             System.out.println("IO: " + e.getMessage());
 
         } finally {
-            if (clientSocket != null) {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    System.out.println("Close failed: " + e.getMessage());
-                }
+            if (scanner != null) {
+                scanner.close();
             }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // Ignore
+            } // Give some time for the receiver thread to finish
+            serverReciverRunning = false;
         }
     }
 
@@ -306,8 +300,18 @@ public class TCPClient {
         return !(inUsername == null || inUsername.trim().isEmpty() || !inUsername.matches("[A-Za-z0-9_]{3,16}"));
     }
 
-    public static void processServerReply(String inString) {
-        Message message = new Message();
-        message.decode(inString);
+    private static void reciveMessagesFromServer(DataInputStream in) {
+        try {
+            while (serverReciverRunning) {
+                String rawMessage = in.readUTF();
+                processServerResponse(rawMessage);
+            }
+        } catch (IOException e) {
+            if (serverReciverRunning) {
+                System.err.println("Error receiving message from auction server: " + e.getMessage());
+            }
+        } finally {
+            serverReciverRunning = false;
+        }
     }
 }
