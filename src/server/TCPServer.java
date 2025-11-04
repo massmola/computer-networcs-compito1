@@ -23,20 +23,20 @@ public class TCPServer {
 
     // Thread-safe list for all connected clients
     static List<Connection> allClients = new CopyOnWriteArrayList<>();
-
-
     static ServerLogic serverLogic = new ServerLogic();
     static final int  SERVER_PORT = 7896;
 
     public static void main (String args[]) {
+
+        serverLogic.createAllAuctions();
+        serverLogic.nextAuction();
         
         // Port Creation - this is the port where the server listens
         try (
     
             // Server Socket Creation
             ServerSocket listenSocket = new ServerSocket(SERVER_PORT);
-        ){ 
-
+        ){
 
             // The server listens for clients who want to connect
             while(true) {

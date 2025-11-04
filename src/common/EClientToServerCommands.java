@@ -1,7 +1,7 @@
 package common;
 
 public enum EClientToServerCommands {
-    EXIT,
+    QUIT,
     HELP,
     STATUS,
     MESSAGE,

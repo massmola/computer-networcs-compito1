@@ -17,94 +17,102 @@ import static common.EServerToClientCommands.*;
 public class TCPClient {
 
     static volatile boolean userSet = false;
-    static volatile boolean serverReciverRunning = true;
+    static volatile boolean serverReceiverRunning = true;
 
     public static void main (String[] args) {
+
+        boolean connectionToServerEstablished = false;
+
         int serverPort = 7896;
         String serverAddress = "localhost"; // oppure un IP/hostname
-        Scanner scanner = null;
+        Scanner scanner = new Scanner(System.in);
 
-        try (
-            Socket clientSocket = new Socket(serverAddress, serverPort);
-            DataInputStream in  = new DataInputStream(clientSocket.getInputStream());
-            DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+        while(!connectionToServerEstablished){
 
-            )
-            {
-                
-            Thread receiverThread = new Thread(() -> reciveMessagesFromServer(in));
-            receiverThread.start();
-
-            // Read from keyboard
-            scanner = new Scanner(System.in);
-
-            // Connection Established
-            System.out.println("Connection established with " + serverAddress + ":" + serverPort);
-
-            // Loop
-            while (serverReciverRunning) {
-
-                String outMessage = "";
-                Message inMessage = new Message();
-
-                // Take user input
-                String inString = "";
-
-                if(userSet){
-                    System.out.println("Enter a command:");
-                    inString = scanner.nextLine().trim();
-
-                    inMessage = processUserInput(inString);
-                    outMessage = processInputMessage(inMessage);
-                } else {
-                    System.out.println("Enter a username:");
-                    inString = scanner.nextLine().trim();
-
-                    inMessage = processUserInputPreRegister(inString);
-                    outMessage = processInputMessagePreRegister(inMessage);
-                }
-
-                if (inMessage.type.equalsIgnoreCase(EXIT.name())) {
-                    System.out.println("User is closing connection. Bye!");
-                    serverReciverRunning = false;
-                    break; // DO NOT send anything to the server
-                }
-
-                if (inString.isEmpty() || outMessage.isEmpty()) {
-                    // Avoid sending empty strings
-                    continue;
-                }
-
-                if (inMessage.type.equalsIgnoreCase(Commands.getErrorCommand())){
-                    continue;
-                }
-
-                // Send and Receive
-                out.writeUTF(outMessage);
-                out.flush();
-                Thread.sleep(500); // Small delay to allow server response to be processed
+            System.out.print("Enter server address: ");
+            if(scanner.hasNextLine()){
+                serverAddress = scanner.nextLine().trim();
             }
-            
-        } catch (UnknownHostException e) {
-            System.out.println("Sock: " + e.getMessage());
 
-        } catch (EOFException e) {
-            System.out.println("EOF: " + e.getMessage());
+            try (
+                    Socket clientSocket = new Socket(serverAddress, serverPort);
+                    DataInputStream in  = new DataInputStream(clientSocket.getInputStream());
+                    DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+            ) {
+                connectionToServerEstablished = true;
 
-        } catch (IOException e) {
-            System.out.println("IO: " + e.getMessage());
+                Thread receiverThread = new Thread(() -> reciveMessagesFromServer(in));
+                receiverThread.start();
 
-        } catch (InterruptedException e) {}
-        finally {
-            if (scanner != null) {
-                scanner.close();
-            }
-            try {
-                Thread.sleep(1000);
+                // Connection Established
+                System.out.println("Connection established with " + serverAddress + ":" + serverPort);
+
+                // Loop
+                while (serverReceiverRunning) {
+
+                    String outMessage = "";
+                    Message inMessage = new Message();
+
+                    // Take user input
+                    String inString = "";
+
+                    if(userSet){
+                        System.out.println("Enter a command:");
+                        inString = scanner.nextLine().trim();
+
+                        inMessage = processUserInput(inString);
+                        outMessage = processInputMessage(inMessage);
+                    } else {
+                        System.out.println("Enter a username:");
+                        inString = scanner.nextLine().trim();
+
+                        inMessage = processUserInputPreRegister(inString);
+                        outMessage = processInputMessagePreRegister(inMessage);
+                    }
+
+                    if (inMessage.type.equalsIgnoreCase(QUIT.name())) {
+                        System.out.println("User is closing connection. Bye!");
+                        serverReceiverRunning = false;
+                        break; // DO NOT send anything to the server
+                    }
+
+                    if (inString.isEmpty() || outMessage.isEmpty()) {
+                        // Avoid sending empty strings
+                        continue;
+                    }
+
+                    if (inMessage.type.equalsIgnoreCase(Commands.getErrorCommand())){
+                        continue;
+                    }
+
+                    // Send and Receive
+                    out.writeUTF(outMessage);
+                    out.flush();
+                    Thread.sleep(500); // Small delay to allow server response to be processed
+                }
+
+            } catch (UnknownHostException e) {
+                System.out.println("Unknown host: " + e.getMessage());
+
+            } catch (EOFException e) {
+                System.out.println("EOF: " + e.getMessage());
+
+            } catch (IOException e) {
+                System.out.println("IO: " + e.getMessage());
+
             } catch (InterruptedException e) {
-                // Ignore
-            } // Give some time for the receiver thread to finish
-            serverReciverRunning = false;
+                System.out.println("Interrupted: " + e.getMessage());
+            }
+            finally {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    // Ignore
+                } // Give some time for the receiver thread to finish
+                if(connectionToServerEstablished){
+                    serverReceiverRunning = false;
+                }
+            }
         }
     }
 
@@ -117,17 +125,17 @@ public class TCPClient {
         String inArgument = parts.length > 1 ? parts[1] : "";
 
         // command exit
-        if (inCommand.equalsIgnoreCase(EXIT.name())) {
+        if (inCommand.equalsIgnoreCase("/" + QUIT.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = EXIT.name();
+                message.type = QUIT.name();
                 message.content = "";
             }
 
             // command help
-        } else if (inCommand.equalsIgnoreCase(HELP.name())) {
+        } else if (inCommand.equalsIgnoreCase("/" + HELP.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
@@ -137,7 +145,7 @@ public class TCPClient {
             }
 
             // command status
-        } else if (inCommand.equalsIgnoreCase(STATUS.name())) {
+        } else if (inCommand.equalsIgnoreCase("/" + STATUS.name())) {
             if(!inArgument.isEmpty()){
                 message.type = Commands.getErrorCommand();
                 message.content = "";
@@ -147,7 +155,7 @@ public class TCPClient {
             }
 
             // command message
-        } else if (inCommand.equalsIgnoreCase(MESSAGE.name())) {
+        } else if (inCommand.equalsIgnoreCase("/" + MESSAGE.name())) {
             if(!inArgument.isEmpty()){
                 message.type = MESSAGE.name();
                 message.content = inArgument;
@@ -157,7 +165,7 @@ public class TCPClient {
             }
 
             // command bid
-        } else if (inCommand.equalsIgnoreCase(BID.name())) {
+        } else if (inCommand.equalsIgnoreCase("/" + BID.name())) {
             if(isStringNumeric(inArgument)){
                 message.type = BID.name();
                 message.content = inArgument;
@@ -184,17 +192,17 @@ public class TCPClient {
         String inArgument = parts.length > 1 ? parts[1] : "";
 
         // command exit
-        if (inCommand.equalsIgnoreCase(EXIT.name())) {
+        if (inCommand.equalsIgnoreCase("/" + QUIT.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
             } else {
-                message.type = EXIT.name();
+                message.type = QUIT.name();
                 message.content = "";
             }
 
             // command help
-        } else if (inCommand.equalsIgnoreCase(HELP.name())) {
+        } else if (inCommand.equalsIgnoreCase("/" + HELP.name())) {
             if (!inArgument.isEmpty()) {
                 message.type = Commands.getErrorCommand();
                 message.content = "";
@@ -276,18 +284,18 @@ public class TCPClient {
 
     public static String getHelpMessage() {
         return "Enter one of the following commands in this format:\n" +
-                "\texit\t\t\t\t\t\t\tto quit the connection\n" +
-                "\thelp\t\t\t\t\t\t\tto print an help message\n" +
-                "\tstatus\t\t\t\t\t\tto print the status of the current bid\n" +
-                "\tmessage messageContent\t\tto send a message to all the clients who are connected\n" +
-                "\tbid bidAmount\t\t\t\tto place a bid and notify all connected clients\n";
+                "\t/quit\t\t\t\t\t\t\tto quit the connection\n" +
+                "\t/help\t\t\t\t\t\t\tto print an help message\n" +
+                "\t/status\t\t\t\t\t\t\tto print the status of the current bid\n" +
+                "\t/message *messageContent*\t\tto send a message to all the clients who are connected\n" +
+                "\t/bid *bidAmount*\t\t\t\tto place a bid and notify all connected clients\n";
     }
 
     public static String getHelpMessagePreRegister() {
         return "Enter one of the following commands in this format:\n" +
-                "\texit\t\t\t\t\t\t\tto quit the connection\n" +
-                "\thelp\t\t\t\t\t\t\tto print an help message\n" +
-                "\t*Your Username*\t\t\t\tmust contain only letters, numbers and underscores. Must be within 3 and 16 characters long\n";
+                "\t/quit\t\t\t\t\tto quit the connection\n" +
+                "\t/help\t\t\t\t\tto print an help message\n" +
+                "\t*Your Username*\t\t\tmust contain only letters, numbers and underscores. Must be within 3 and 16 characters long\n";
     }
 
     public static String getErrorMessage() {
@@ -304,16 +312,16 @@ public class TCPClient {
 
     private static void reciveMessagesFromServer(DataInputStream in) {
         try {
-            while (serverReciverRunning) {
+            while (serverReceiverRunning) {
                 String rawMessage = in.readUTF();
                 processServerResponse(rawMessage);
             }
         } catch (IOException e) {
-            if (serverReciverRunning) {
+            if (serverReceiverRunning) {
                 System.err.println("Error receiving message from auction server: " + e.getMessage());
             }
         } finally {
-            serverReciverRunning = false;
+            serverReceiverRunning = false;
         }
     }
 }

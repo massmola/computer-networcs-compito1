@@ -1,7 +1,6 @@
 package server;
 
-import common.Commands;
-import common.EServerToClientCommands;
+import common.EClientToServerCommands;
 import common.Message;
 
 import java.io.DataInputStream;
@@ -10,7 +9,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 
-import static common.EClientToServerCommands.*;
 import static common.EServerToClientCommands.*;
 
 /**
@@ -89,70 +87,91 @@ class Connection extends Thread {
         inMessage.decode(inString);
         Message outMessage = new Message();
 
+        boolean broadcastMessage;
+
         // TODO: to switch-case
 
-        if(inMessage.type.equals(REGISTER.name())){
+        switch (EClientToServerCommands.valueOf(inMessage.type)) {
+            case REGISTER: {
 
-            // attempt registration
-            if(serverLogic.registerUser(inMessage.content)){
-                outMessage.type = USER_REGISTER_SUCCESS.name();
-                username = inMessage.content;
-                userSet = true;
-            } else {
-                outMessage.type = USER_REGISTER_FAIL.name();
+                // Attempts user's registration
+                broadcastMessage = false;
+                if(serverLogic.registerUser(inMessage.content)){
+                    outMessage.type = USER_REGISTER_SUCCESS.name();
+                    username = inMessage.content;
+                    userSet = true;
+                } else {
+                    outMessage.type = USER_REGISTER_FAIL.name();
+                }
+
+                break;
             }
+            case QUIT: {
 
-        } else if (inMessage.type.equals(EXIT.name())){
+                // User interrupts connection with the server
+                broadcastMessage = false;
+                outMessage.type = PRINT_MESSAGE.name();
+                outMessage.content = "Server received: EXIT";
+                serverLogic.removeUser(username);
+                interruptConnection = true;
 
-            // User interrupts connection with the server
-            outMessage.type = PRINT_MESSAGE.name();
-            outMessage.content = "Server received: EXIT";
-            serverLogic.removeUser(username);
-            interruptConnection = true;
+                break;
+            }
+            case STATUS: {
 
-        } else if (inMessage.type.equals(STATUS.name())) {
+                // Returns to the user the status of the current auction
+                broadcastMessage = false;
+                outMessage.type = PRINT_MESSAGE.name();
+                outMessage.content = serverLogic.getAuctionStatus();
 
-            // TODO: User asks status
-            outMessage.type = PRINT_MESSAGE.name();
-            outMessage.content = "Server received: " + username + " ASKS STATUS";
-            /*
-             *
-             *
-             *
-             */
+                break;
+            }
+            case MESSAGE: {
 
-        } else if (inMessage.type.equals(MESSAGE.name())) {
+                // Broadcasts the message entered by the user
+                broadcastMessage = true;
+                outMessage.type = PRINT_MESSAGE.name();
+                outMessage.content = "-> " + username + ": " + inMessage.content;
 
-            // TODO: User sends message to chat
-            outMessage.type = PRINT_MESSAGE.name();
-            outMessage.content = "Server received: " + username + " SENDS MESSAGE: " + inMessage.content;
+                break;
+            }
+            case BID: {
+
+                // Attempts to place a bid. If the placement is successful, broadcasts to all users
+                outMessage.type = PRINT_MESSAGE.name();
+                double bidAmount = Double.parseDouble(inMessage.getContent());
+
+                if(serverLogic.getActiveAuction().isBidValid(bidAmount)){
+                    broadcastMessage = true;
+                    serverLogic.placeBid(username, bidAmount);
+                    outMessage.content = "-> " + username + " places a bid of: €" + inMessage.content;
+                } else {
+                    broadcastMessage = false;
+                    outMessage.content = "The input bid was refused.\n" +
+                            "The bid must be a value higher than the current bid's value\n" +
+                            "and a valid multiple of the item's minimum increment.";
+                }
+
+                break;
+            }
+            default: {
+                broadcastMessage = false;
+                outMessage.type = IGNORE.name();
+                outMessage.content = "";
+            }
+        }
+
+        if(broadcastMessage){
             TCPServer.broadcast(outMessage.encode());
-
-        } else if (inMessage.type.equals(BID.name())) {
-
-            // TODO: User places a bid
-            outMessage.type = PRINT_MESSAGE.name();
-            outMessage.content = "Server received: " + username + " PLACES A BID OF " + inMessage.content;
-            /*
-             *
-             *
-             *
-             */
-
-        } else {
-
-            // Ignore server message
             outMessage.type = IGNORE.name();
             outMessage.content = "";
         }
-
-        
 
         return outMessage.encode();
     }
 
 
-        /**
+    /**
      * Sends a message to just this client.
      * Synchronized to prevent multiple threads (e.g., a broadcast and a
      * private reply) from writing at the exact same time.

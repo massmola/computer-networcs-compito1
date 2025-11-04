@@ -13,9 +13,8 @@ public class Auction {
     // TODO we missed to add placeBid() or is in an other class ???
     final Item item;
     boolean open;
-
     // We use long for comfort, because the duration is converted in millis to use some functions of the timer.
-    private long durationInMinutes;
+    private long durationInSeconds;
 
     /**
      * The map has as keys the users who participated in the auction so far,
@@ -26,7 +25,7 @@ public class Auction {
     public Auction(Item item, long duration){
         this.item = item;
         this.open = false;
-        this.durationInMinutes = duration;
+        this.durationInSeconds = duration;
         usersBids = new HashMap<>();
     }
 
@@ -67,13 +66,43 @@ public class Auction {
      * the bid of the user is updated, otherwise the highest is kept.
      */
     // TODO we need a return value to know if the user was registered or not/and the pid was updated or not
-    public boolean addUserAndBid(String username, double bid){
+    public boolean placeBid(String username, double bid){
         if(usersBids.containsKey(username)) {
-            if(usersBids.get(username) >= bid)
+            if(!isBidValid(bid))
                 return false;
         }
         usersBids.put(username, bid);
         return true;
+    }
+
+    public boolean isBidValid(double bid){
+        return isBidAmountSuperior(bid) && isBidIncrementValid(bid);
+    }
+
+    /**
+     *
+     * @param bid the new input bid
+     * @return true if the input bid is higher than the current bid; false otherwise.
+     */
+    public boolean isBidAmountSuperior(double bid){
+        return bid > Math.max(getHighestBid(), item.getStartPrice());
+    }
+
+    /**
+     *
+     * @param bid the new input bid
+     * @return true if the input bid is a valid increment of the item's starting price; false otherwise.
+     */
+    public boolean isBidIncrementValid(double bid){
+
+        if (bid == 0.0) return false;
+
+        double difference = item.getStartPrice() - bid;
+        double ratio = difference/item.getMinIncrement();
+        double rounded = Math.round(ratio);
+        double eps = 1e-9;
+
+        return Math.abs(ratio - rounded) < eps;
     }
 
     /**
@@ -147,7 +176,7 @@ public class Auction {
         this.open = open;
     }
 
-    public long getDurationInMinutes() {
-        return durationInMinutes;
+    public long getDurationInSeconds() {
+        return durationInSeconds;
     }
 }

@@ -1,10 +1,15 @@
 package server;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+
 import auction.*;
+import common.EServerToClientCommands;
+import common.Message;
+
+import static server.AuctionLoaderFromTxt.AuctionLoader.loadAuctions;
 
 /**
  * ServerLogic manages the business logic of the auction system,
@@ -23,289 +28,143 @@ import auction.*;
  */
 public class ServerLogic {
 
-    // Map of active auctions: auctionId -> Auction
-    // used a ConcurrentHashMap to allow multiple threads to access the map concurrently
-    private final Set<Auction> auctions;
-
+    private ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> scheduledFuture;
+    private ArrayList<Auction> auctions;
     private final Set<String> users;
-
-    private Auction activeAuction;
+    private Auction activeAuction = null;
+    private int curAuctionId = -1;
 
     public ServerLogic() {
-        this.auctions = new HashSet<>();
+        this.auctions = new ArrayList<>();
         this.users = new HashSet<>();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     // ========== AUCTION MANAGEMENT ==========
 
-    /**
-     * Creates a new auction
-     *
-     * @param item the Item object being auctioned
-     * @param duration the duration of the auction in minutes
-     * @return the auctionId if created successfully, null if already exists
-     */
-    public synchronized String createAuction(Item item, long duration) {
-
-        try {
-            auctions.add(new Auction(item, duration));
-        } catch (IllegalArgumentException e) {
-            return e.getMessage();
-        } catch (NullPointerException e) {
-            return "Auction cannot be null";
-        }
-
-        // TODO call the startTimer un open Auction
-
-
-//        if (auctions.containsKey(auctionId)) {
-//            return null; // Auction already exists
-//        }
-//
-////        Auction auction = new Auction(item);
-//        auctions.put(auctionId, auction);
-//
-//        System.out.println("[ServerLogic] Auction created: " + auctionId);
-//        return auctionId;
+    public synchronized void createAllAuctions(){
+        auctions = loadAuctions("src/server/auctions.txt");
     }
 
     /**
-     * Starts an Auction
-     *
-     * @param auctionId the auction identifier
-     * @return a result message indicating that the auction started, or null if there is no auction for the input id
+     * Closes the current auction, if there is one, ad broadcasts the result.
+     * If there is a next auction, opens it and starts the timer.
+     * If all auctions are closed, broadcasts a message saying that all auctions are terminated.
      */
-    public synchronized String startAuction(String auctionId){
-        if (!auctions.containsKey(auctionId)) {
-            return null; // Auction id does not exist
+
+    public synchronized void nextAuction() {
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("-> ");
+
+        // Checks if there is a previous auction to close.
+        /*
+         * If there is previous auction to close, close it and send the ending message to announce
+         * the winner.
+         * If there is no active auction, this is the first one.
+         */
+
+        if(activeAuction != null){
+            stringBuilder.append(getCloseAuctionMessage(activeAuction));
+            activeAuction.setOpen(false);
+            stringBuilder.append("\nAuction was closed\n");
         }
 
-        if(activeAuction != null && !activeAuction.isOpen() ){
-            auctions.get(auctionId).setOpen(true);
+        // Check if there is a next auction.
+        /*
+         * If there is a next auction, update curAuctionId and activeAuction.
+         * If the starting auction is the last, pass as runnable the ending function.
+         * Start the timer on the auction.
+         *
+         * If there is not a next auction, do nothing.
+         */
+
+        if(auctions.size() <= curAuctionId + 1 || auctions.isEmpty()){
+            stringBuilder.append("All Auctions are terminated");
+            activeAuction = null;
+            scheduler.shutdown();
         } else {
-            return "Auction " + auctionId + " can not be started, it is already open an other one";
+
+            // Start next auction;
+            curAuctionId = curAuctionId + 1;
+            activeAuction = auctions.get(curAuctionId);
+            activeAuction.setOpen(true);
+
+            stringBuilder.append("Next Auction Started");
+
+            // Schedule time
+            scheduledFuture = scheduler.schedule(() -> {
+                nextAuction();
+            }, activeAuction.getDurationInSeconds(), TimeUnit.SECONDS);
         }
 
-        String result = "Auction " + auctionId + " started";
-        return result;
+        Message message = new Message();
+        message.type = EServerToClientCommands.PRINT_MESSAGE.name();
+        message.content = stringBuilder.toString();
+
+        TCPServer.broadcast(message.encode());
     }
 
     /**
-     * Places a bid on an auction
+     * @return remaining time of the currently active auction
+     */
+    public long getRemainingTime(){
+        if(scheduledFuture.isDone() || scheduledFuture.isCancelled()) return 0;
+        else return(scheduledFuture.getDelay(TimeUnit.SECONDS));
+    }
+
+    /**
+     * Places a bid on the active auction
      *
-     * @param auctionId the auction identifier
-     * @param bidderId the bidder's identifier (username)
      * @param amount the bid amount
      * @return true if the bid was accepted, false otherwise
      */
-    public synchronized boolean placeBid(String auctionId, String bidderId, double amount) {
-        Auction auction = auctions.get(auctionId);
+    public synchronized boolean placeBid(String user, double amount) {
 
-        if (auction == null) {
-            return false; // Auction not found
+        if (activeAuction == null) {
+            return false;
         }
 
-        // TODO do we need to check if it is open? Cant be a check in place bid that will return a message or error?
-        if (!auction.isOpen()) {
-            return false; // Auction is closed
+        if(!activeAuction.isBidValid(amount)){
+            return false;
         }
 
-        // TODO check if the bid was successful?
-        boolean accepted = auction.addUserAndBid(bidderId, amount);
+        boolean accepted = activeAuction.placeBid(user, amount);
 
         if (accepted) {
-            System.out.println("[ServerLogic] New bid: " + auctionId + " -> " + bidderId + " €" + amount);
+            System.out.println("[ServerLogic] New bid: " + activeAuction.getItem().getName() + " -> " + user + " €" + amount);
         }
 
         return accepted;
     }
 
     /**
-     * Closes an auction and determines the winner
-     *
-     * @param auctionId the auction identifier
-     * @return a result message describing the outcome, or error message if auction not found
-     */
-    public synchronized String closeAuction(String auctionId) {
-        Auction auction = auctions.get(auctionId);
-
-        if (auction == null) {
-            return "Auction not found: " + auctionId;
-        }
-
-        if (!auction.isOpen()) {
-            return "Auction " + auctionId + " is already closed";
-        }
-
-        auction.setOpen(false);
-
-        String result;
-        String winner = auction.getHighestBidder();
-        if (winner != null) {
-            result = "Auction " + auctionId + " closed - WINNER: " +
-                    winner + " with €" + auction.getHighestBid();
-        } else {
-            result = "Auction " + auctionId + " closed - No winner (no bids)";
-        }
-
-        System.out.println("[ServerLogic] " + result);
-        return result;
-    }
-
-    /**
      * Gets the current status of an auction
      *
-     * @param auctionId the auction identifier
      * @return a formatted string with auction details, or error message if not found
      */
-    public String getAuctionStatus(String auctionId) {
-        Auction auction = auctions.get(auctionId);
+    public String getAuctionStatus() {
 
-        if (auction == null) {
-            return "Auction not found: " + auctionId;
+        if (activeAuction == null) {
+            return "No active auctions found";
         }
 
         StringBuilder status = new StringBuilder();
-        status.append("=== Auction: ").append(auction.getItem().getName()).append(" ===\n");
-        status.append("ID: ").append(auctionId).append("\n");
-        status.append("Status: ").append(auction.isOpen() ? "OPEN" : "CLOSED").append("\n");
-        status.append("Starting price: €").append(auction.getItem().getStartPrice()).append("\n");
+        status.append("=== Auction: ").append(activeAuction.getItem().getDescription()).append(" ===\n");
+        status.append("Starting price: €").append(activeAuction.getItem().getStartPrice()).append("\n");
+        status.append("Minimum increment: €").append(activeAuction.getItem().getMinIncrement()).append("\n");
+        status.append("Remaining time: ").append(formatTime(getRemainingTime())).append("\n");
 
-        // TODO check for auction -> i will change return to Double.MIN_VALUE with a variable that hold the starting price or using NULL
-        double highestBid = auction.getHighestBid();
+        double highestBid = activeAuction.getHighestBid();
         if (highestBid != Double.MIN_VALUE) {
             status.append("Current bid: €").append(highestBid).append("\n");
-            status.append("Current bidder: ").append(auction.getHighestBidder()).append("\n");
+            status.append("Highest bidder: ").append(activeAuction.getHighestBidder()).append("\n");
         } else {
             status.append("No bids yet\n");
         }
 
         return status.toString();
-    }
-
-    /**
-     * Lists all available auctions
-     *
-     * @return a formatted string with all auctions and their status
-     */
-    public String listAuctions() {
-        if (auctions.isEmpty()) {
-            return "No auctions available";
-        }
-
-        StringBuilder list = new StringBuilder("=== AVAILABLE AUCTIONS ===\n");
-
-        for (Map.Entry<String, Auction> entry : auctions.entrySet()) {
-            String auctionId = entry.getKey();
-            Auction auction = entry.getValue();
-
-            list.append(auctionId)
-                    .append(" - ")
-                    .append(auction.getItem().getName())
-                    .append(" [")
-                    .append(auction.isOpen() ? "OPEN" : "CLOSED")
-                    .append("] ");
-
-            // TODO check for auction -> i will change return to Double.MIN_VALUE with a variable that hold the starting price or using NULL
-            double highestBid = auction.getHighestBid();
-            if (highestBid != Double.MIN_VALUE) {
-                list.append("€").append(highestBid);
-            } else {
-                list.append("(starting: €").append(auction.getItem().getStartPrice()).append(")");
-            }
-
-            list.append("\n");
-        }
-
-        return list.toString();
-    }
-
-    /**
-     * Removes a closed auction from the system
-     *
-     * @param auctionId the auction identifier
-     * @return true if removed successfully, false if not found or still open
-     */
-    public synchronized boolean removeAuction(String auctionId) {
-        Auction auction = auctions.get(auctionId);
-
-        if (auction == null) {
-            return false; // Auction not found
-        }
-
-        if (auction.isOpen()) {
-            return false; // Cannot remove an open auction
-        }
-
-        auctions.remove(auctionId);
-        System.out.println("[ServerLogic] Auction removed: " + auctionId);
-        return true;
-    }
-
-    /**
-     * Gets a specific auction object
-     *
-     * @param auctionId the auction identifier
-     * @return the Auction object, or null if not found
-     */
-    public Auction getAuction(String auctionId) {
-        return auctions.get(auctionId);
-    }
-
-    /**
-     * Checks if an auction exists
-     *
-     * @param auctionId the auction identifier
-     * @return true if the auction exists, false otherwise
-     */
-    public boolean hasAuction(String auctionId) {
-        return auctions.containsKey(auctionId);
-    }
-
-//    /**
-//     * Gets the number of currently active (open) auctions
-//     *
-//     * @return the count of open auctions
-//     */
-//    public int getActiveAuctionsCount() {
-//        return (int) auctions.values().stream()
-//                .filter(Auction::isOpen)
-//                .count();
-//    }
-
-    /**
-     * Gets the total number of auctions (both open and closed)
-     *
-     * @return the total count of auctions
-     */
-    public int getTotalAuctionsCount() {
-        return auctions.size();
-    }
-
-    /**
-     * Closes all open auctions (typically called during server shutdown)
-     *
-     * @return the number of auctions that were closed
-     */
-    public synchronized int closeAllAuctions() {
-        int count = 0;
-        for (Auction auction : auctions.values()) {
-            if (auction.isOpen()) {
-                auction.setOpen(false);
-                count++;
-            }
-        }
-        System.out.println("[ServerLogic] Closed " + count + " open auctions");
-        return count;
-    }
-
-    /**
-     * Clears all auctions from the system
-     * Warning: This should only be called during shutdown
-     */
-    public synchronized void clearAllAuctions() {
-        auctions.clear();
-        System.out.println("[ServerLogic] All auctions cleared");
     }
 
     /**
@@ -347,5 +206,36 @@ public class ServerLogic {
 
     public Auction getActiveAuction() {
         return activeAuction;
+    }
+
+    // ------- Private methods -------
+
+    private String getCloseAuctionMessage(Auction auction){
+
+        if(auction.getHighestBidder() == null){
+            return "Auction: " + auction.getItem().getDescription() +
+                    "\nterminated with no winning bidder.";
+        } else {
+            return "Auction: " + auction.getItem().getDescription() +
+                    "\nis won by: " + auction.getHighestBidder() +
+                    "\nwith a winning bid of: €" + auction.getHighestBid();
+        }
+    }
+
+    public static String formatTime(long seconds) {
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long secs = seconds % 60;
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) sb.append(hours).append(" hour").append(hours > 1 ? "s" : "");
+        if (minutes > 0) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(minutes).append(" minute").append(minutes > 1 ? "s" : "");
+        }
+        if (secs > 0 || sb.length() == 0) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(secs).append(" second").append(secs != 1 ? "s" : "");
+        }
+        return sb.toString();
     }
 }

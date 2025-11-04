@@ -21,7 +21,7 @@ private static final String auctionFilePath = "src/server/auctions.txt";
     /**
      * Simple class to load auctions from a plain text file.
      * Each line in the file must have the format:
-     * name;startPrice;durationInMinutes;minIncrement
+     * name;startPrice;durationInSeconds;minIncrement
      */
     public class AuctionLoader {
 
@@ -31,8 +31,8 @@ private static final String auctionFilePath = "src/server/auctions.txt";
          * @param filePath the path to the auction file
          * @return a list of Auction objects
          */
-        public static List<Auction> loadAuctions(String filePath) {
-            List<Auction> auctions = new ArrayList<>();
+        public static ArrayList<Auction> loadAuctions(String filePath) {
+            ArrayList<Auction> auctions = new ArrayList<>();
 
             try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
                 String line;
@@ -67,6 +67,3 @@ private static final String auctionFilePath = "src/server/auctions.txt";
         }
     }
 }
-
-// TODO add in server logic to load auctions from txt file
-//  List<Auction> auctions = loadAuctions("auctions.txt");
