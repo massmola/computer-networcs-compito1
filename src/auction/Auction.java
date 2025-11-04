@@ -14,15 +14,19 @@ public class Auction {
     final Item item;
     boolean open;
 
+    // We use long for comfort, because the duration is converted in millis to use some functions of the timer.
+    private long durationInMinutes;
+
     /**
      * The map has as keys the users who participated in the auction so far,
      * and as values their respective highest bids.
      */
     HashMap<String, Double> usersBids = null;
 
-    public Auction(Item item){
+    public Auction(Item item, long duration){
         this.item = item;
         this.open = false;
+        this.durationInMinutes = duration;
         usersBids = new HashMap<>();
     }
 
@@ -141,5 +145,9 @@ public class Auction {
 
     public void setOpen(boolean open) {
         this.open = open;
+    }
+
+    public long getDurationInMinutes() {
+        return durationInMinutes;
     }
 }

@@ -25,14 +25,14 @@ public class ServerLogic {
 
     // Map of active auctions: auctionId -> Auction
     // used a ConcurrentHashMap to allow multiple threads to access the map concurrently
-    private final ConcurrentHashMap<String, Auction> auctions;
+    private final Set<Auction> auctions;
 
     private final Set<String> users;
 
     private Auction activeAuction;
 
     public ServerLogic() {
-        this.auctions = new ConcurrentHashMap<>();
+        this.auctions = new HashSet<>();
         this.users = new HashSet<>();
     }
 
@@ -41,20 +41,32 @@ public class ServerLogic {
     /**
      * Creates a new auction
      *
-     * @param auctionId the unique identifier for the auction
      * @param item the Item object being auctioned
+     * @param duration the duration of the auction in minutes
      * @return the auctionId if created successfully, null if already exists
      */
-    public synchronized String createAuction(String auctionId, Item item) {
-        if (auctions.containsKey(auctionId)) {
-            return null; // Auction already exists
+    public synchronized String createAuction(Item item, long duration) {
+
+        try {
+            auctions.add(new Auction(item, duration));
+        } catch (IllegalArgumentException e) {
+            return e.getMessage();
+        } catch (NullPointerException e) {
+            return "Auction cannot be null";
         }
 
-        Auction auction = new Auction(item);
-        auctions.put(auctionId, auction);
+        // TODO call the startTimer un open Auction
 
-        System.out.println("[ServerLogic] Auction created: " + auctionId);
-        return auctionId;
+
+//        if (auctions.containsKey(auctionId)) {
+//            return null; // Auction already exists
+//        }
+//
+////        Auction auction = new Auction(item);
+//        auctions.put(auctionId, auction);
+//
+//        System.out.println("[ServerLogic] Auction created: " + auctionId);
+//        return auctionId;
     }
 
     /**
