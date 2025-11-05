@@ -66,8 +66,8 @@ public class ServerLogic {
          */
 
         if(activeAuction != null){
-            stringBuilder.append(getCloseAuctionMessage(activeAuction));
             activeAuction.setOpen(false);
+            stringBuilder.append(getCloseAuctionMessage(activeAuction));
             stringBuilder.append("\nAuction was closed\n");
         }
 
@@ -222,7 +222,7 @@ public class ServerLogic {
         }
     }
 
-    public static String formatTime(long seconds) {
+    private static String formatTime(long seconds) {
         long hours = seconds / 3600;
         long minutes = (seconds % 3600) / 60;
         long secs = seconds % 60;
