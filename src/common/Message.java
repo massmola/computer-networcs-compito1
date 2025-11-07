@@ -32,6 +32,11 @@ public class Message {
         content = parts[1];
     }
 
+    public static boolean isValidFormat(String encoded){
+        String[] parts = encoded.split("\\|", 2);
+        return parts.length >= 2;
+    }
+
 
     // ------- Getters and Setters -------
 

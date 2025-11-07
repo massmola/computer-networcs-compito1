@@ -1,5 +1,6 @@
 package server;
 
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -103,7 +104,11 @@ public class ServerLogic {
         message.type = EServerToClientCommands.PRINT_MESSAGE.name();
         message.content = stringBuilder.toString();
 
-        TCPServer.broadcast(message.encode());
+        try{
+            RMIServer.broadcast(message.encode());
+        } catch (RemoteException e){
+            System.out.println("Remote exception: " + e);
+        }
     }
 
     /**
